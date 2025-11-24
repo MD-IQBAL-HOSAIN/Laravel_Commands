@@ -1,0 +1,44 @@
+Heard Set Up:
+_________________________
+
+
+step-1:
+-----------------------------
+(A) Heard download for window.
+https://herd.laravel.com/windows
+
+(B) PHP Download From Here
+https://www.phpmyadmin.net/downloads/
+phpMyAdmin-5.2.3-all-languages.zip
+
+(C) MySQL Installer download:
+https://dev.mysql.com/downloads/workbench/
+
+->Go to download page
+
+version:
+---------
+Windows (x86, 32-bit), MSI Installer	8.0.44	558.3M	
+Download
+(mysql-installer-community-8.0.44.0.msi)
+
+
+
+
+step-2:
+-----------------------------
+
+Install First : Herd-1.22.3-setup.exe
+
+Install 2nd: unzip phpMyAdmin-5.2.3-all-languages.zip and 
+	     Keep it here:  C:\Users\MD IQBAL HOSSAIN\Herd\phpMyAdmin
+	     (I mean your User wise where you install your Heard)
+
+Install 3rd: Install this file:  mysql-installer-community-8.0.44.0.msi	
+
+
+step-3:
+-----------------------------
+All project put your Heard folder and run heard then all is ok.
+
+MySQL URL: https://phpmyadmin.test/

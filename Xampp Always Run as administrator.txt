@@ -1,0 +1,42 @@
+✅ Step-by-Step: Always Run XAMPP as Administrator
+1. Locate the XAMPP Control Panel
+
+Go to:
+
+C:\xampp
+
+
+Find the file:
+
+xampp-control.exe
+
+2. Open Properties
+
+Right-click on xampp-control.exe
+
+Select Properties
+
+3. Set to Run as Administrator
+
+Go to the Compatibility tab
+
+Under Settings, check:
+
+✅ Run this program as an administrator
+
+4. (Optional) Apply for All Users
+
+Click the "Change settings for all users" button at the bottom
+
+Again check:
+
+✅ Run this program as an administrator
+
+
+Click OK
+
+5. Apply and Close
+
+Click Apply > OK to save the settings
+
+Now, every time you double-click xampp-control.exe, it will automatically run as administrator, and you won’t have to right-click each time.

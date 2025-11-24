@@ -1,0 +1,18 @@
+MySQL (Xampp Port Issues Solving Way):
+______________________________________________
+
+step-1:
+--------------
+Click =  Win+R
+
+step-2:
+---------------
+type: services.msc
+
+Step-3:
+---------------------
+Find:  MySQL80
+
+Step-4:
+---------------------
+Click close or stop

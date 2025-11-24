@@ -103,11 +103,11 @@ Github
 =====Iqbal======
 git branch
 --------------------------------
-1. git checkout -b iqbal
+1. git checkout -b iqu
 
 0.  After create branch :
 	2.1: git push
-	2.2: git push --set-upstream origin iqbal 
+	2.2: git push --set-upstream origin iqu
 	(then it will set up git hub)
 .....................................................................
 
