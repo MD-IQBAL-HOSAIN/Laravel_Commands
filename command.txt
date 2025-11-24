@@ -14,7 +14,7 @@ g. php artisan migrate
 0.	git project run system..
 	1. npm i
 	2. npm run build
-	3. composer update
+	3. composer install
 	4. php artisan migrate
 	5. php artisan db:seed
 	6. php artisan storage:link
