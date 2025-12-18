@@ -1,0 +1,58 @@
+-----------------------------------------------------------
+File :
+-------------------------------------------------------------
+[Unit]
+Description=Laravel Queue Worker
+After=network.target
+
+[Service]
+User=primepepsynth-admin 
+Group=primepepsynth-admin
+Restart=always
+RestartSec=5
+
+ExecStart=/usr/bin/php /home/primepepsynth-admin/htdocs/admin.primepepsynth.com/public/artisan queue:work --sleep=3 --tries=3 --timeout=90
+WorkingDirectory=/home/primepepsynth-admin/htdocs/admin.primepepsynth.com/public
+
+StandardOutput=append:/var/log/laravel-queue.log
+StandardError=append:/var/log/laravel-queue-error.log
+
+[Install]
+WantedBy=multi-user.target
+
+------------------------------------------------------
+------------------------------------------------------
+
+
+Server a Laravel Queue setup:
+___________________________________________
+
+# check korte hobe:
+----------------------------------------------------------------------
+1.  root@srv1051692#:cd /etc/system | ls
+
+" laravel-queue.service " name file create korte hobe.
+
+ 1.1.  root@srv1051692:/etc/systemd/system# nano laravel-queue.service
+
+  uporer file tar text add korte hobe (unite theke target porjonto)
+
+2. # kon route a ache check dite pwd command;
+-----------------------------------------------------------------------
+/home/primepepsynth-admin/htdocs/admin.primepepsynth.com/public/artisan
+
+/home/primepepsynth-admin/htdocs/admin.primepepsynth.com/public
+
+3. Uporer file tar user and group change korte hobe:
+----------------------------------------------------------------------
+User=primepepsynth-admin 
+Group=primepepsynth-admin
+
+3.1 : systemctl daemon-reload
+4. systemctl start laravel-queue.service
+5. systemctl enable laravel-queue.service
+6. systemctl status laravel-queue.service
+
+
+
+

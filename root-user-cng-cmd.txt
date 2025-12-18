@@ -1,0 +1,5 @@
+user : primepepsynth-admin
+
+root@srv1197522:/home/primepepsynth-admin/htdocs/admin.primepepsynth.com/public# su primepepsynth-admin
+
+

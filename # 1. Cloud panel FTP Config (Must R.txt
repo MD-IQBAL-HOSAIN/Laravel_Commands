@@ -1,0 +1,110 @@
+# 1. Cloud panel FTP Config (Must Read 1 to 8)
+#
+# 2.cd /etc/proftpd/ 
+# 3. mv proftpd.conf proftpd.conf.bak
+# 4. nano proftpd.conf
+# 5. paste this file and save and exit (ctrl + o for save and ctrl + x for exit)
+# 6. systemctl restart proftpd (done)
+# 7. ufw allow 30000:31000/tcp
+# 8. ufw allow 21/tcp (all is done)
+
+# Includes DSO modules
+Include /etc/proftpd/modules.conf
+
+# Set off to disable IPv6 support which is annoying on IPv4 only boxes.
+UseIPv6 off
+# If set on you can experience a longer connection delay in many cases.
+<IfModule mod_ident.c>
+  IdentLookups off
+</IfModule>
+
+ServerName "Debian"
+# Set to inetd only if you would run proftpd by inetd/xinetd/socket.
+# Read README.Debian for more information on proper configuration.
+ServerType standalone
+DeferWelcome off
+
+# Disable MultilineRFC2228 per https://github.com/proftpd/proftpd/issues/1085
+# MultilineRFC2228on
+DefaultServer on
+ShowSymlinks on
+
+TimeoutNoTransfer 6000
+TimeoutStalled 6000
+TimeoutIdle 12000
+
+DisplayLogin welcome.msg
+DisplayChdir .message true
+ListOptions "-l"
+
+DenyFilter \*.*/
+
+
+Port 21
+
+PassivePorts 30000 31000
+
+
+MasqueradeAddress 89.116.52.173
+
+# This is useful for masquerading address with dynamic IPs:
+# refresh any configured MasqueradeAddress 89.116.52.173
+<IfModule mod_dynmasq.c>
+# DynMasqRefresh 28800
+</IfModule>
+
+
+MaxInstances 30
+
+# Set the user and group that the server normally runs at.
+User proftpd
+Group nogroup
+
+
+Umask 0002 0002
+# Normally, we want files to be overwriteable.
+AllowOverwrite on
+
+
+
+TransferLog /var/log/proftpd/xferlog
+SystemLog /var/log/proftpd/proftpd.log
+
+
+
+<IfModule mod_quotatab.c>
+QuotaEngine off
+</IfModule>
+
+<IfModule mod_ratio.c>
+Ratios off
+</IfModule>
+
+
+# Delay engine reduces impact of the so-called Timing Attack described in
+# http://www.securityfocus.com/bid/11430/discuss
+# It is on by default.
+<IfModule mod_delay.c>
+DelayEngine on
+</IfModule>
+
+<IfModule mod_ctrls.c>
+ControlsEngine off
+ControlsMaxClients 2
+ControlsLog /var/log/proftpd/controls.log
+ControlsInterval 5
+ControlsSocket /var/run/proftpd/proftpd.sock
+</IfModule>
+
+<IfModule mod_ctrls_admin.c>
+AdminControlsEngine off
+</IfModule>
+
+
+Include /etc/proftpd/conf.d/
+
+<Global>
+    RequireValidShell off
+</Global>
+
+DefaultRoot ~ ftp-user
