@@ -1,0 +1,393 @@
+======================================================
+Continue with google,facebook and apple login
+=======================================================
+
+
+step- 1 : composer 
+-----------------------------
+composer require laravel/socialite
+composer require socialiteproviders/apple
+
+
+
+step- 2 : config/services.php ( no need to add this, its optional)
+----------------------------------------------------------------------
+//For google login
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
+    //for facebook
+    'facebook' => [
+        'client_id' => env('FACEBOOK_CLIENT_ID'),
+        'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
+        'redirect' => env('FACEBOOK_REDIRECT_URI'),
+    ],
+
+
+step- 3 : .env 
+-----------------------------
+No need to add any thing.
+
+
+
+
+step- 4 : Route
+----------------
+//Continue with google,facebook and apple login
+    Route::post('/social/login', [SocialLoginController::class, 'SocialLogin']);
+
+
+step- 5 : Controller
+----------------------
+
+<?php
+
+namespace App\Http\Controllers\API;
+
+use Exception;
+use Carbon\Carbon;
+use App\Models\User;
+use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Hash;
+use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Facades\Validator;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+
+class SocialLoginController extends Controller
+{
+
+/*
+* Social Login Functionality
+*/
+    public function SocialLogin(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'provider' => 'required|in:google,facebook,apple',
+            'token' => 'required',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation Failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            // Handling Apple login
+            if ($request->provider === 'apple') {
+                return $this->handleAppleLogin($request);
+            }
+
+            // Handling Google and Facebook login
+            $socialUser = Socialite::driver($request->provider)->stateless()->userFromToken($request->token);
+
+            if ($socialUser) {
+                $user = $this->createOrUpdateUser($socialUser, $request->provider);
+
+                $token = JWTAuth::fromUser($user);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => "Login Successfully via " . ucfirst($request->provider),
+                    'data' => [
+                        'token' => $token,
+                        'user' => [
+                            'id' => $user->id,
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'avatar' => $user->avatar,
+                            'banner' => $user->banner ? $user->banner : null,
+                        ],
+                    ],
+                ], 200);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Invalid or Expired Token",
+                ], 422);
+            }
+        } catch (Exception $e) {
+            Log::error('Social Login Error: ' . $e->getMessage(), [
+                'provider' => $request->provider,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // Apple Login Handler
+    private function handleAppleLogin(Request $request)
+    {
+        try {
+            $email = null;
+            $name = null;
+            $appleUserId = null;
+
+            // Check if token looks like a JWT (has 2 dots)
+            if (substr_count($request->token, '.') === 2) {
+                // Production: Decode Apple JWT token
+                try {
+                    $tokenParts = explode('.', $request->token);
+
+                    // Decode payload (add padding if needed)
+                    $payload = base64_decode(str_pad(
+                        strtr($tokenParts[1], '-_', '+/'),
+                        strlen($tokenParts[1]) % 4,
+                        '=',
+                        STR_PAD_RIGHT
+                    ));
+
+                    $decodedPayload = json_decode($payload, true);
+
+                    if ($decodedPayload && isset($decodedPayload['sub'])) {
+                        $appleUserId = $decodedPayload['sub'];
+                        $email = $decodedPayload['email'] ?? null;
+
+                        Log::info('Apple JWT decoded successfully', ['payload' => $decodedPayload]);
+                    } else {
+                        Log::warning('Apple JWT decode failed - invalid payload structure');
+                    }
+                } catch (Exception $e) {
+                    Log::error('Apple JWT decode error: ' . $e->getMessage());
+                }
+            }
+
+            // Fallback to request data if JWT decode failed or for testing
+            if (!$email) {
+                $email = $request->email ?? null;
+            }
+
+            if (!$name) {
+                $name = $request->name ?? 'Apple User';
+            }
+
+            if (!$appleUserId) {
+                $appleUserId = $request->apple_id ?? 'apple_test_' . md5($email ?? time());
+            }
+
+            // Validate email
+            if (!$email) {
+                throw new Exception('Email is required for Apple login');
+            }
+
+            // Create or update user
+            $user = User::where('email', $email)->first();
+
+            if (!$user) {
+                $user = User::create([
+                    'name' => $name,
+                    'email' => $email,
+                    'apple_id' => $appleUserId,
+                    'email_verified_at' => Carbon::now(),
+                    'password' => Hash::make(Str::random(16)),
+                ]);
+            } else {
+                if (empty($user->apple_id)) {
+                    $user->update(['apple_id' => $appleUserId]);
+                }
+            }
+
+            $token = JWTAuth::fromUser($user);
+            return response()->json([
+                'success' => true,
+                'message' => "Login Successfully via Apple",
+                'data' => [
+                    'token' => $token,
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'avatar' => $user->avatar,
+                        'banner' => $user->banner ? $user->banner : null,
+                    ],
+                ],
+            ], 200);
+        } catch (Exception $e) {
+            Log::error('Apple Login Error: ' . $e->getMessage(), [
+                'token' => substr($request->token, 0, 50) . '...', // First 50 chars only
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Apple login failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // Helper method to create or update user
+    private function createOrUpdateUser($socialUser, $provider)
+    {
+        $user = User::where('email', $socialUser->getEmail())->first();
+
+        if (!$user) {
+            $password = Str::random(16);
+            $providerIdField = $provider . '_id';
+
+            $user = User::create([
+                'name' => $socialUser->getName() ?? $socialUser->getNickname() ?? 'User',
+                'email' => $socialUser->getEmail(),
+                'avatar' => $socialUser->getAvatar(),
+                'email_verified_at' => Carbon::now(),
+                'password' => Hash::make($password),
+                $providerIdField => $socialUser->getId(),
+            ]);
+        } else {
+            $providerIdField = $provider . '_id';
+            if (empty($user->$providerIdField)) {
+                $user->update([$providerIdField => $socialUser->getId()]);
+            }
+        }
+
+        return $user;
+    }
+
+
+
+
+    /*
+* Guest Login Functionality
+*/
+    public function guestLogin(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'guest_id' => 'required|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return jsonErrorResponse('Validation failed', 422, $validator->errors()->toArray());
+        }
+
+        try {
+            $guestId = $request->guest_id;
+
+            // Check if guest already exists
+            $user = User::where('guest_id', $guestId)->first();
+
+            if (!$user) {
+                // Generate next guest name (Guest_1, Guest_2, ...)
+                $lastGuest = User::where('name', 'like', 'Guest_%')
+                    ->orderBy('id', 'desc')
+                    ->first();
+
+                $guestNumber = $lastGuest
+                    ? ((int) str_replace('Guest_', '', $lastGuest->name)) + 1
+                    : 1;
+
+                $guestName = 'Guest_' . $guestNumber;
+
+                // ✅ Generate email using guestId
+                $guestEmail = 'guest' . $guestId . '@gmail.com';
+
+                // ✅ Generate random secure password
+                $password = 'guest_' . bin2hex(random_bytes(5)); // e.g. guest_fa83b1e4c2
+
+                // Create new guest user
+                $user = User::create([
+                    'name' => $guestName,
+                    'email' => $guestEmail,
+                    'guest_id' => $guestId,
+                    'is_guest' => true,
+                    'password' => Hash::make($password),
+                ]);
+
+                // Optional: you can log or return the raw password for testing (not in production)
+                $user->raw_password = $password;
+            }
+
+            // Generate JWT token
+            $token = JWTAuth::fromUser($user);
+
+            // Return success response
+            return jsonResponse(true, 'Guest login successful.', 200, [
+                'token' => [
+                    'access_token' => $token,
+                    'token_type' => 'bearer',
+                ],
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar,
+                    'is_guest' => $user->is_guest,
+                    'guest_id' => $user->guest_id,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return jsonErrorResponse('Something went wrong', 500, [$e->getMessage()]);
+        }
+    }
+}
+
+
+
+
+step- 6 : postman : Route will be same but change will be provider and token.
+------------------------------------------------------------------------------
+
+1. for google: postman raw 
+........................
+
+{
+    "provider": "google",
+    "token": "ya29.a0AXeO80QM7-_2z76mu8rDN9lZ6VNaqZhpp_cf04vVf4QWvaK6loMFijpInMcNxcm8ONf6zPjd-cjJet5Jl-Qm_hzXQmI-NsbbxH9OreNKndpRouYxfyMjleZErdo5TDogivllJ6Vk3kj0_Jq2iH-lgOeXCEbicOga1tMaCgYKASMSARISFQHGX2MiG87nMxu-BxcFH7pCudcxGg0170"
+}
+
+
+
+2. for facebook: postman raw 
+........................
+
+{
+    "provider": "facebook",
+    "token": "EAAPTo1YVUvQBO4c0lMDOqUMHfANVGf5IzhMIH6dMh46NfpectILAV7eZCAe3XlPf4iT64stUNXkJCIcLSsWlqPXwh5cZA0r61gWUR85aG9q2k1iR6WxKAiKSRFkOpcZAEZAGNz6URVAtJFMcGOiv1t5HUDNnA2JqGZCWfPYUsfhf1EStx7tjbEjOcRnCHyvJQ9I9CZCbN6UHGESfHaTZCQPE0mqgI5W44xuob9GouchDfZAedx670ThZAZBoZCKnlIqtC1HJAZDZD"
+}
+
+
+3. for Apple: postman raw 
+........................
+
+{
+    "provider": "facebook",
+    "token": "EAAPTo1YVUvQBO4c0lMDOqUMHfANVGf5IzhMIH6dMh46NfpectILAV7eZCAe3XlPf4iT64stUNXkJCIcLSsWlqPXwh5cZA0r61gWUR85aG9q2k1iR6WxKAiKSRFkOpcZAEZAGNz6URVAtJFMcGOiv1t5HUDNnA2JqGZCWfPYUsfhf1EStx7tjbEjOcRnCHyvJQ9I9CZCbN6UHGESfHaTZCQPE0mqgI5W44xuob9GouchDfZAedx670ThZAZBoZCKnlIqtC1HJAZDZD"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
