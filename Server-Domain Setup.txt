@@ -1,0 +1,35 @@
+
+
+Domain Setup:
+-----------------------
+
+1. login domain site ( jekhane domain buy kora hoice).
+2. Find DNS
+3. Add this in dns record:
+
+Type     	Host
+1. @		72.62.210.107
+2. *		72.62.210.107
+
+
+
+
+
+
+
+
+
+
+
+FTP Problem : System socket Timeout issue in cloude panel FTP solved:-
+---------------------------------------------------------------------
+
+step-1: login
+----------------------
+ssh root@72.62.210.107
+pass: ja set kora root pass seta dite hobe.
+
+step-2 : command
+-------------------
+1.  ufw allow 21/tcp
+2. ufw reload

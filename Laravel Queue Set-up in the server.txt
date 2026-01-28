@@ -31,22 +31,46 @@ ___________________________________________
 ----------------------------------------------------------------------
 1.  root@srv1051692#:cd /etc/system | ls
 
-" laravel-queue.service " name file create korte hobe.
+" laravel-queue.service " name file create korte hobe. next command chalalei create hobe..
 
  1.1.  root@srv1051692:/etc/systemd/system# nano laravel-queue.service
 
-  uporer file tar text add korte hobe (unite theke target porjonto)
+  uporer file tar text add korte hobe (unit theke target porjonto)
+
+  -----------------------------------------------------------------------
+  #path er majhkhane "home theke artisan" obdi change korte hobe baki gulo same thakbe:
+
+ExecStart= /usr/bin/php/home/primepepsynth-admin/htdocs/admin.primepepsynth.com/public/artisan queue:work --sleep=3 --tries=3 --timeout=90
+
+#eta exaxct same path e thake start to end home to public:
+WorkingDirectory /home/primepepsynth-admin/htdocs/admin.primepepsynth.com/public
+
+
 
 2. # kon route a ache check dite pwd command;
------------------------------------------------------------------------
-/home/primepepsynth-admin/htdocs/admin.primepepsynth.com/public/artisan
+i)  cd ezri/htdocs/ezri.app/public/
+ii)  pwd
+after pwd I will see exact path then next step.
 
-/home/primepepsynth-admin/htdocs/admin.primepepsynth.com/public
+iii)  nano /etc/systemd/system/laravel-queue.service
+iv) uporer file er vitorer ei path change korte hobe : 
+ExecStart= & WorkingDirectory=
+
 
 3. Uporer file tar user and group change korte hobe:
 ----------------------------------------------------------------------
+v) User=primepepsynth-admin 
+Group=primepepsynth-admin  
+
+file er ei user and group o change korte hobe.
+(i). root@srv1296003:/home/ezri/htdocs/ezri.app/public# ls -l
+
+
+#then change the group and user in the toper file:
+[Service]
 User=primepepsynth-admin 
 Group=primepepsynth-admin
+
 
 3.1 : systemctl daemon-reload
 4. systemctl start laravel-queue.service
